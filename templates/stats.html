@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h5 class="section-title"><i class="fas fa-chart-bar"></i>Threat Statistics</h5>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="cyber-card text-center">
+      <i class="fas fa-envelope fa-2x mb-2" style="color:var(--orange)"></i>
+      <h2 style="color:#fff; font-family:'Share Tech Mono',monospace;">{{ total }}</h2>
+      <p style="color:var(--muted); font-family:'Share Tech Mono',monospace; font-size:0.8rem; letter-spacing:1px;">TOTAL SCANNED</p>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="cyber-card text-center">
+      <i class="fas fa-skull-crossbones fa-2x mb-2" style="color:#ff4444"></i>
+      <h2 style="color:#ff4444; font-family:'Share Tech Mono',monospace;">{{ spam_count }}</h2>
+      <p style="color:var(--muted); font-family:'Share Tech Mono',monospace; font-size:0.8rem; letter-spacing:1px;">THREATS DETECTED</p>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="cyber-card text-center">
+      <i class="fas fa-shield-alt fa-2x mb-2" style="color:#00ff88"></i>
+      <h2 style="color:#00ff88; font-family:'Share Tech Mono',monospace;">{{ ham_count }}</h2>
+      <p style="color:var(--muted); font-family:'Share Tech Mono',monospace; font-size:0.8rem; letter-spacing:1px;">CLEAN EMAILS</p>
+    </div>
+  </div>
+</div>
+
+{% if total > 0 %}
+<div class="cyber-card">
+  <p class="form-label mb-2">THREAT RATIO</p>
+  <div class="progress" style="height:24px; background:var(--bg2); border-radius:4px; overflow:hidden;">
+    <div class="progress-bar" style="width:{{ (spam_count/total*100)|round(1) }}%; background:#ff4444;">
+      {% if (spam_count/total*100)|round(1) > 10 %}{{ (spam_count/total*100)|round(1) }}% SPAM{% endif %}
+    </div>
+    <div class="progress-bar" style="width:{{ (ham_count/total*100)|round(1) }}%; background:#00ff88;">
+      {% if (ham_count/total*100)|round(1) > 10 %}{{ (ham_count/total*100)|round(1) }}% HAM{% endif %}
+    </div>
+  </div>
+  <div class="d-flex justify-content-between mt-2" style="font-family:'Share Tech Mono',monospace; font-size:0.8rem; color:var(--muted);">
+    <span style="color:#ff4444;">▮ SPAM {{ (spam_count/total*100)|round(1) }}%</span>
+    <span style="color:#00ff88;">▮ HAM {{ (ham_count/total*100)|round(1) }}%</span>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

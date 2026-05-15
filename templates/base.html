@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpamGuard — Cyber Threat Detector</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --orange: #ff6b35;
+            --orange-dim: #cc5528;
+            --bg: #0a0e17;
+            --bg2: #0f1624;
+            --card: #131d2e;
+            --border: #1e2d45;
+            --text: #c9d6e3;
+            --muted: #5a7a99;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.05rem;
+            background-image:
+                linear-gradient(rgba(255,107,53,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,107,53,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            min-height: 100vh;
+        }
+
+        /* ── NAVBAR ── */
+        .navbar {
+            background: rgba(10,14,23,0.95);
+            border-bottom: 1px solid var(--orange);
+            backdrop-filter: blur(10px);
+            padding: 12px 0;
+        }
+        .navbar-brand {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--orange) !important;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+        }
+        .navbar-brand span { color: #fff; }
+        .nav-link {
+            color: var(--muted) !important;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            padding: 6px 16px !important;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: var(--orange) !important;
+            background: rgba(255,107,53,0.08);
+        }
+        .nav-link i { margin-right: 6px; }
+
+        /* ── CARDS ── */
+        .cyber-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+        .cyber-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 3px; height: 100%;
+            background: var(--orange);
+        }
+
+        /* ── BUTTONS ── */
+        .btn-cyber {
+            background: var(--orange);
+            color: #fff;
+            border: none;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            padding: 10px 28px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .btn-cyber:hover {
+            background: var(--orange-dim);
+            color: #fff;
+            box-shadow: 0 0 16px rgba(255,107,53,0.4);
+        }
+        .btn-outline-cyber {
+            background: transparent;
+            color: var(--orange);
+            border: 1px solid var(--orange);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            padding: 8px 20px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .btn-outline-cyber:hover {
+            background: rgba(255,107,53,0.1);
+            color: var(--orange);
+        }
+
+        /* ── FORM CONTROLS ── */
+        .form-control, .form-select {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+        }
+        .form-control:focus, .form-select:focus {
+            background: var(--bg2);
+            border-color: var(--orange);
+            color: var(--text);
+            box-shadow: 0 0 0 2px rgba(255,107,53,0.2);
+        }
+        .form-control::placeholder { color: var(--muted); }
+        .form-label {
+            color: var(--orange);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        /* ── BADGES ── */
+        .badge-spam {
+            background: rgba(255,59,59,0.15);
+            color: #ff4444;
+            border: 1px solid #ff4444;
+            padding: 5px 14px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+        .badge-ham {
+            background: rgba(0,255,136,0.1);
+            color: #00ff88;
+            border: 1px solid #00ff88;
+            padding: 5px 14px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        /* ── TABLE ── */
+        .cyber-table {
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+        .cyber-table thead th {
+            background: var(--bg);
+            color: var(--orange);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-color: var(--border);
+            padding: 14px 16px;
+        }
+        .cyber-table tbody tr {
+            border-color: var(--border);
+            transition: background 0.15s;
+        }
+        .cyber-table tbody tr:hover { background: rgba(255,107,53,0.04); }
+        .cyber-table td {
+            border-color: var(--border);
+            padding: 12px 16px;
+            vertical-align: middle;
+        }
+
+        /* ── ALERTS ── */
+        .alert-success {
+            background: rgba(0,255,136,0.08);
+            border: 1px solid #00ff88;
+            color: #00ff88;
+        }
+        .alert-danger {
+            background: rgba(255,68,68,0.08);
+            border: 1px solid #ff4444;
+            color: #ff4444;
+        }
+        .alert-warning {
+            background: rgba(255,107,53,0.08);
+            border: 1px solid var(--orange);
+            color: var(--orange);
+        }
+
+        /* ── SECTION TITLE ── */
+        .section-title {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--orange);
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .section-title i { margin-right: 8px; }
+
+        /* ── FOOTER ── */
+        footer {
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            text-align: center;
+            padding: 16px;
+            margin-top: 60px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--orange-dim); border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg">
+    <div class="container">
+        <a class="navbar-brand" href="/"><i class="fas fa-shield-alt me-2"></i>SPAM<span>GUARD</span></a>
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+            <i class="fas fa-bars" style="color:var(--orange)"></i>
+        </button>
+        <div class="collapse navbar-collapse" id="navMenu">
+            <ul class="navbar-nav ms-auto gap-1">
+                <li class="nav-item"><a class="nav-link" href="/"><i class="fas fa-terminal"></i>Detect</a></li>
+                <li class="nav-item"><a class="nav-link" href="/records"><i class="fas fa-database"></i>Records</a></li>
+                <li class="nav-item"><a class="nav-link" href="/add"><i class="fas fa-plus-circle"></i>Add</a></li>
+                <li class="nav-item"><a class="nav-link" href="/stats"><i class="fas fa-chart-bar"></i>Stats</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+                <i class="fas fa-info-circle"></i> {{ message }}
+                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</div>
+
+<footer>
+    <i class="fas fa-lock me-2"></i>SPAMGUARD v1.0 &mdash; Semester 6 AI Lab &mdash; SZABIST
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
