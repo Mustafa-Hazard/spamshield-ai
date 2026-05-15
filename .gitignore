@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pkl
+*.pyc
+dataset/
+*.bz2
+*.zip
+.env
+instance/
