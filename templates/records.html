@@ -6,10 +6,27 @@
   <a href="/add" class="btn btn-cyber btn-sm"><i class="fas fa-plus me-1"></i>ADD RECORD</a>
 </div>
 
+<!-- SEARCH + FILTER BAR -->
+<div class="cyber-card mb-4 py-3">
+  <div class="row g-2 align-items-center">
+    <div class="col-md-8">
+      <input type="text" id="searchInput" class="form-control"
+        placeholder="Search email content...">
+    </div>
+    <div class="col-md-4">
+      <select id="filterSelect" class="form-select">
+        <option value="ALL">ALL VERDICTS</option>
+        <option value="SPAM">SPAM ONLY</option>
+        <option value="HAM">HAM ONLY</option>
+      </select>
+    </div>
+  </div>
+</div>
+
 {% if records %}
 <div class="cyber-card p-0" style="overflow:hidden;">
   <div class="table-responsive">
-    <table class="table cyber-table mb-0">
+    <table class="table cyber-table mb-0" id="recordsTable">
       <thead>
         <tr>
           <th>#</th>
@@ -20,11 +37,11 @@
           <th>Actions</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="tableBody">
         {% for record in records %}
-        <tr>
+        <tr data-verdict="{{ record.result }}">
           <td style="color:var(--muted); font-family:'Share Tech Mono',monospace;">{{ loop.index }}</td>
-          <td style="max-width:320px; font-size:0.88rem;">
+          <td style="max-width:320px; font-size:0.88rem;" class="email-preview">
             {{ record.email_text[:90] }}{% if record.email_text|length > 90 %}...{% endif %}
           </td>
           <td>
@@ -56,10 +73,49 @@
     </table>
   </div>
 </div>
+
+<!-- No results message -->
+<div id="noResults" class="cyber-card text-center py-4 mt-3" style="display:none;">
+  <i class="fas fa-search fa-2x mb-2" style="color:var(--muted)"></i>
+  <p style="color:var(--muted); font-family:'Share Tech Mono',monospace; margin:0;">// no matching records found</p>
+</div>
+
 {% else %}
 <div class="cyber-card text-center py-5">
   <i class="fas fa-inbox fa-3x mb-3" style="color:var(--muted)"></i>
   <p style="color:var(--muted); font-family:'Share Tech Mono',monospace;">// no records found in database</p>
 </div>
 {% endif %}
+
+<script>
+  const searchInput  = document.getElementById('searchInput');
+  const filterSelect = document.getElementById('filterSelect');
+  const rows         = document.querySelectorAll('#tableBody tr');
+  const noResults    = document.getElementById('noResults');
+
+  function filterTable() {
+    const query  = searchInput.value.toLowerCase();
+    const filter = filterSelect.value;
+    let visible  = 0;
+
+    rows.forEach(row => {
+      const text    = row.querySelector('.email-preview').textContent.toLowerCase();
+      const verdict = row.dataset.verdict;
+      const matchSearch = text.includes(query);
+      const matchFilter = filter === 'ALL' || verdict === filter;
+
+      if (matchSearch && matchFilter) {
+        row.style.display = '';
+        visible++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    noResults.style.display = visible === 0 ? 'block' : 'none';
+  }
+
+  searchInput.addEventListener('input', filterTable);
+  filterSelect.addEventListener('change', filterTable);
+</script>
 {% endblock %}

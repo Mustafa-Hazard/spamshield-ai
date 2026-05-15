@@ -28,7 +28,7 @@
 </div>
 
 {% if total > 0 %}
-<div class="cyber-card">
+<div class="cyber-card mb-4">
   <p class="form-label mb-2">THREAT RATIO</p>
   <div class="progress" style="height:24px; background:var(--bg2); border-radius:4px; overflow:hidden;">
     <div class="progress-bar" style="width:{{ (spam_count/total*100)|round(1) }}%; background:#ff4444;">
@@ -43,5 +43,68 @@
     <span style="color:#00ff88;">▮ HAM {{ (ham_count/total*100)|round(1) }}%</span>
   </div>
 </div>
+
+<!-- LINE CHART -->
+<div class="cyber-card">
+  <p class="form-label mb-3">DETECTIONS OVER TIME</p>
+  <canvas id="lineChart" height="100"></canvas>
+</div>
 {% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const chartData = {{ chart_data | tojson }};
+  const labels = chartData.map(d => d.date);
+  const spamData = chartData.map(d => d.spam);
+  const hamData  = chartData.map(d => d.ham);
+
+  new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'SPAM',
+          data: spamData,
+          borderColor: '#ff4444',
+          backgroundColor: 'rgba(255,68,68,0.08)',
+          tension: 0.4,
+          pointBackgroundColor: '#ff4444',
+          fill: true
+        },
+        {
+          label: 'HAM',
+          data: hamData,
+          borderColor: '#00ff88',
+          backgroundColor: 'rgba(0,255,136,0.06)',
+          tension: 0.4,
+          pointBackgroundColor: '#00ff88',
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#5a7a99',
+            font: { family: 'Share Tech Mono' }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#5a7a99', font: { family: 'Share Tech Mono', size: 11 } },
+          grid:  { color: 'rgba(255,255,255,0.04)' }
+        },
+        y: {
+          ticks: { color: '#5a7a99', font: { family: 'Share Tech Mono', size: 11 } },
+          grid:  { color: 'rgba(255,255,255,0.04)' },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+</script>
 {% endblock %}

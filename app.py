@@ -142,11 +142,48 @@ def delete(record_id):
 # STATS — Dashboard
 @app.route('/stats')
 def stats():
-    total = predictions_col.count_documents({})
+    total      = predictions_col.count_documents({})
     spam_count = predictions_col.count_documents({'result': 'SPAM'})
-    ham_count = predictions_col.count_documents({'result': 'HAM'})
-    return render_template('stats.html', total=total, spam_count=spam_count, ham_count=ham_count)
+    ham_count  = predictions_col.count_documents({'result': 'HAM'})
 
+    # Build line chart data — group by date
+    pipeline = [
+        {
+            '$group': {
+                '_id': {
+                    'date':   {'$dateToString': {'format': '%Y-%m-%d', 'date': '$timestamp'}},
+                    'result': '$result'
+                },
+                'count': {'$sum': 1}
+            }
+        },
+        {'$sort': {'_id.date': 1}}
+    ]
+    raw = list(predictions_col.aggregate(pipeline))
 
+    # Organize into {date: {spam:x, ham:y}}
+    from collections import defaultdict
+    daily = defaultdict(lambda: {'spam': 0, 'ham': 0})
+    for r in raw:
+        date   = r['_id']['date']
+        result = r['_id']['result']
+        if result == 'SPAM':
+            daily[date]['spam'] += r['count']
+        else:
+            daily[date]['ham']  += r['count']
+
+    chart_data = [
+        {'date': d, 'spam': v['spam'], 'ham': v['ham']}
+        for d, v in sorted(daily.items())
+    ]
+
+    return render_template('stats.html',
+        total=total,
+        spam_count=spam_count,
+        ham_count=ham_count,
+        chart_data=chart_data
+    )
+    
+    
 if __name__ == '__main__':
     app.run(debug=True)

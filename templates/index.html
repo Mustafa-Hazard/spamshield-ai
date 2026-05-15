@@ -29,28 +29,35 @@
       </form>
     </div>
 
-    {% if result %}
-    <div class="cyber-card text-center">
-      {% if result == 'SPAM' %}
-        <i class="fas fa-skull-crossbones fa-3x mb-3" style="color:#ff4444"></i>
-        <h4 style="color:#ff4444; font-family:'Share Tech Mono',monospace; letter-spacing:3px;">THREAT DETECTED</h4>
-        <div class="mt-2"><span class="badge-spam fs-6"><i class="fas fa-ban me-2"></i>SPAM</span></div>
-        <p class="mt-3 mb-0" style="color:var(--muted); font-family:'Share Tech Mono',monospace; font-size:0.85rem;">
-          CONFIDENCE: <span style="color:#ff4444">{{ confidence }}%</span>
-        </p>
-      {% else %}
-        <i class="fas fa-shield-alt fa-3x mb-3" style="color:#00ff88"></i>
-        <h4 style="color:#00ff88; font-family:'Share Tech Mono',monospace; letter-spacing:3px;">CLEAR</h4>
-        <div class="mt-2"><span class="badge-ham fs-6"><i class="fas fa-check me-2"></i>HAM</span></div>
-        <p class="mt-3 mb-0" style="color:var(--muted); font-family:'Share Tech Mono',monospace; font-size:0.85rem;">
-          CONFIDENCE: <span style="color:#00ff88">{{ confidence }}%</span>
-        </p>
-      {% endif %}
-      <p class="mt-2" style="color:var(--muted); font-size:0.8rem; font-family:'Share Tech Mono',monospace;">
-        // result logged to database
-      </p>
+   {% if result %}
+<div class="cyber-card text-center">
+  {% if result == 'SPAM' %}
+    <i class="fas fa-skull-crossbones fa-3x mb-3" style="color:#ff4444"></i>
+    <h4 style="color:#ff4444; font-family:'Share Tech Mono',monospace; letter-spacing:3px;">THREAT DETECTED</h4>
+    <div class="mt-2 mb-3"><span class="badge-spam fs-6"><i class="fas fa-ban me-2"></i>SPAM</span></div>
+  {% else %}
+    <i class="fas fa-shield-alt fa-3x mb-3" style="color:#00ff88"></i>
+    <h4 style="color:#00ff88; font-family:'Share Tech Mono',monospace; letter-spacing:3px;">CLEAR</h4>
+    <div class="mt-2 mb-3"><span class="badge-ham fs-6"><i class="fas fa-check me-2"></i>HAM</span></div>
+  {% endif %}
+
+  <!-- CONFIDENCE METER -->
+  <p style="font-family:'Share Tech Mono',monospace; font-size:0.8rem; color:var(--muted); letter-spacing:1px;">
+    CONFIDENCE LEVEL
+  </p>
+  <div class="progress mx-auto mb-2" style="height:20px; background:var(--bg2); border-radius:4px; max-width:400px;">
+    <div class="progress-bar" role="progressbar"
+      style="width:{{ confidence }}%;
+             background:{% if result == 'SPAM' %}#ff4444{% else %}#00ff88{% endif %};
+             font-family:'Share Tech Mono',monospace; font-size:0.8rem; transition: width 1s ease;">
+      {{ confidence }}%
     </div>
-    {% endif %}
+  </div>
+  <p style="color:var(--muted); font-size:0.78rem; font-family:'Share Tech Mono',monospace;">
+    // result logged to database
+  </p>
+</div>
+{% endif %}
 
   </div>
 </div>
