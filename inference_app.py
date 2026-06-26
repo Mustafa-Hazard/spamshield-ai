@@ -8,22 +8,34 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 
 # Ensure stopwords are available in this container too
-nltk.download('stopwords', quiet=True)
+nltk.download("stopwords", quiet=True)
+
 
 # Define structured input validation schema
 class EmailPayload(BaseModel):
-    content: str = Field(..., min_length=1, max_length=50000, description="The raw body text of the email to analyze")
+    content: str = Field(
+        ...,
+        min_length=1,
+        max_length=50000,
+        description="The raw body text of the email to analyze",
+    )
+
 
 # Define structured response schema for client predictability
 class PredictionResponse(BaseModel):
     label: str = Field(..., description="Classification result: 'spam' or 'ham'")
-    confidence_score: float = Field(..., description="Probability score of the assigned label")
-    model_version: str = Field(..., description="Semantic version of the model used for inference")
+    confidence_score: float = Field(
+        ..., description="Probability score of the assigned label"
+    )
+    model_version: str = Field(
+        ..., description="Semantic version of the model used for inference"
+    )
+
 
 app = FastAPI(
     title="SpamShield AI - Inference Engine",
     version="1.0.0",
-    description="Isolated microservice for real-time NLP email spam classification"
+    description="Isolated microservice for real-time NLP email spam classification",
 )
 
 MODEL_PATH = os.getenv("MODEL_PATH", "model/spam_classifier.pkl")
@@ -37,35 +49,48 @@ try:
 except Exception as e:
     raise RuntimeError(f"Critical failure loading model assets: {str(e)}")
 
+
 # ─────────────────────────────────────────────
 # 🧹 Text Preprocessing — MUST mirror train_model.py exactly
 # ─────────────────────────────────────────────
 class TextPreprocessor:
     """Replicates the exact cleaning pipeline used during training."""
+
     def __init__(self):
         self.stemmer = PorterStemmer()
-        self.stop_words = set(stopwords.words('english'))
+        self.stop_words = set(stopwords.words("english"))
 
     def clean(self, text: str) -> str:
         if not isinstance(text, str):
             return ""
         text = text.lower()
-        text = re.sub(r'http\S+|www\S+', '', text)
-        text = re.sub(r'\S+@\S+', '', text)
-        text = re.sub(r'[^a-zA-Z\s]', '', text)
-        text = re.sub(r'\s+', ' ', text).strip()
+        text = re.sub(r"http\S+|www\S+", "", text)
+        text = re.sub(r"\S+@\S+", "", text)
+        text = re.sub(r"[^a-zA-Z\s]", "", text)
+        text = re.sub(r"\s+", " ", text).strip()
         tokens = text.split()
-        tokens = [self.stemmer.stem(w) for w in tokens if w not in self.stop_words and len(w) > 2]
-        return ' '.join(tokens)
+        tokens = [
+            self.stemmer.stem(w)
+            for w in tokens
+            if w not in self.stop_words and len(w) > 2
+        ]
+        return " ".join(tokens)
+
 
 preprocessor = TextPreprocessor()
+
 
 # ─────────────────────────────────────────────
 # 🩺 Health Check Endpoint (used by Docker healthcheck)
 # ─────────────────────────────────────────────
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "model_loaded": model is not None, "model_version": MODEL_VERSION}
+    return {
+        "status": "ok",
+        "model_loaded": model is not None,
+        "model_version": MODEL_VERSION,
+    }
+
 
 # ─────────────────────────────────────────────
 # 🔮 Prediction Endpoint
@@ -78,7 +103,7 @@ def predict(payload: EmailPayload):
         if not clean_text:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Input text contained no analyzable content after cleaning."
+                detail="Input text contained no analyzable content after cleaning.",
             )
 
         vectorized = vectorizer.transform([clean_text])
@@ -92,7 +117,7 @@ def predict(payload: EmailPayload):
         return PredictionResponse(
             label=label,
             confidence_score=round(confidence, 4),
-            model_version=MODEL_VERSION
+            model_version=MODEL_VERSION,
         )
 
     except HTTPException:
@@ -100,5 +125,5 @@ def predict(payload: EmailPayload):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Inference engine failure: {str(e)}"
+            detail=f"Inference engine failure: {str(e)}",
         )
