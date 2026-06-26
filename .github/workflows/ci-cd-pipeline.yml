@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Check out the repository source code code
+    # 1. Check out the repository source code
     - name: Checkout Source Code
       uses: actions/checkout@v4
 
@@ -23,7 +23,7 @@ jobs:
     - name: Set up Python 3.11
       uses: actions/setup-python@v5
       with:
-        python-node: '3.11'
+        python-version: '3.11' # Fixed parameter from python-node to python-version
         cache: 'pip' # Automated caching for faster workflow runs
 
     # 3. Upgrade package installer and fetch verification tools
@@ -35,8 +35,8 @@ jobs:
     # 4. Strict formatting validation (Enforces clean coding habits)
     - name: Verify Code Style (Black Formatter)
       run: |
-        # Checks if code matches standard format rules without overwriting files
-        black --check app.py inference_app.py train_model.py build_data_file.py
+        # Checks the current directory but excludes the virtual environment folder
+        black --check . --exclude "venv/|.venv/"
 
     # 5. Syntax and anti-pattern analysis via Flake8
     - name: Lint Code Architecture (Flake8)
@@ -49,6 +49,5 @@ jobs:
     # 6. Static Application Security Testing (SAST)
     - name: Execute Security Vulnerability Audit (Bandit)
       run: |
-        # Run security check on our application source folders
-        # -r: recursive scan, -lll: report only Medium/High severity bugs
-        bandit -r app.py inference_app.py train_model.py -lll
+        # Run security check recursively across the project directory, skipping your venv folder
+        bandit -r . --exclude "./venv,./.venv" -lll
