@@ -1,4 +1,3 @@
-```markdown
 # SpamShield AI
 
 [![SpamShield AI - CI Pipeline & Security Gates](https://github.com/Mustafa-Hazard/spamshield-ai/actions/workflows/ci-cd-pipeline.yml/badge.svg)](https://github.com/Mustafa-Hazard/spamshield-ai/actions)
