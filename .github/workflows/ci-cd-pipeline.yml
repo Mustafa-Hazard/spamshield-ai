@@ -36,7 +36,7 @@ jobs:
     - name: Verify Code Style (Black Formatter)
       run: |
         # Checks if code matches standard format rules without overwriting files
-        black --check app.py model/inference_app.py train_model.py build_data_file.py
+        black --check app.py inference_app.py train_model.py build_data_file.py
 
     # 5. Syntax and anti-pattern analysis via Flake8
     - name: Lint Code Architecture (Flake8)
@@ -51,4 +51,4 @@ jobs:
       run: |
         # Run security check on our application source folders
         # -r: recursive scan, -lll: report only Medium/High severity bugs
-        bandit -r app.py model/inference_app.py train_model.py -lll
+        bandit -r app.py inference_app.py train_model.py -lll
