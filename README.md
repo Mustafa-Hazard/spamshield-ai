@@ -26,10 +26,10 @@ The platform separates presentation and administration layers from core machine 
 SpamShield AI implements a strict Continuous Integration (CI) automated quality pipeline powered by GitHub Actions (`.github/workflows/ci-cd-pipeline.yml`) that guarantees only safe, compliant code enters production environments.
 
 ### Pipeline Lifecycle Actions
-1.  **Isolated Execution Sandbox:** Configures clean virtual runtime parameters via automated containers running Python 3.11 with `pip` package caching optimization enabled.
-2.  **Dynamic Formatting Enforcement (Black):** Validates and preserves layout compliance across the entire repository dynamically using `black --check .` while safely ignoring localized environment dependencies (`venv`).
-3.  **Syntactic Integrity Auditing (Flake8):** Parses files against architectural anti-patterns, missing variable mapping errors, and syntax defects.
-4.  **Static Application Security Testing (Bandit - SAST):** Scans source directories recursively for vulnerability entry vectors. It successfully protects infrastructure integrity by restricting insecure hardcoded behaviors (e.g., preventing **CWE-94 Code Generation Control** threats by enforcing dynamic environment variable flag evaluations).
+1. **Isolated Execution Sandbox:** Configures clean virtual runtime parameters via automated containers running Python 3.11 with `pip` package caching optimization enabled.
+2. **Dynamic Formatting Enforcement (Black):** Validates and preserves layout compliance across the entire repository dynamically using `black --check .` while safely ignoring localized environment dependencies (`venv`).
+3. **Syntactic Integrity Auditing (Flake8):** Parses files against architectural anti-patterns, missing variable mapping errors, and syntax defects.
+4. **Static Application Security Testing (Bandit - SAST):** Scans source directories recursively for vulnerability entry vectors. It successfully protects infrastructure integrity by restricting insecure hardcoded behaviors (e.g., preventing **CWE-94 Code Generation Control** threats by enforcing dynamic environment variable flag evaluations).
 
 ---
 
@@ -56,87 +56,3 @@ The application handles multi-environment scaling (Local vs. Dockerized vs. Clou
 ```bash
 git clone [https://github.com/Mustafa-Hazard/spamshield-ai.git](https://github.com/Mustafa-Hazard/spamshield-ai.git)
 cd spamshield-ai
-
-```
-
-### Step 2: Establish Virtual Environment
-
-```powershell
-# Create environment
-python -m venv venv
-
-# Activate on Windows (PowerShell)
-.\venv\Scripts\Activate.ps1
-
-# Activate on macOS/Linux
-source venv/bin/activate
-
-```
-
-### Step 3: Fetch Dependencies
-
-```bash
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-
-```
-
-### Step 4: Run Application in Development Mode
-
-To active live reloading and verbose debugging flags locally, supply runtime environment parameters directly to your shell process:
-
-```powershell
-# Windows PowerShell
-$env:FLASK_DEBUG="True"
-python app.py
-
-# macOS / Linux Bash
-export FLASK_DEBUG="True"
-python app.py
-
-```
-
-The localized gateway will initialize smoothly at `http://127.0.0.1:5000/`.
-
----
-
-## 🐳 Docker Container Orchestration
-
-To compile the service suite inside an isolated microservice pod layout, deploy via `docker-compose`:
-
-```bash
-# Build environment clusters and spin up containers
-docker-compose up --build
-
-# Run containers detached in background
-docker-compose up -d
-
-```
-
----
-
-## 🧪 Quality and Contribution Guidelines
-
-Before executing changes back to remote feature branches, run localized validation gates to maintain passing pipeline badges:
-
-```bash
-# Code Style formatting optimization
-python -m black . --exclude "venv/|.venv/"
-
-# Architecture & Style Verification
-flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-
-# SAST Vulnerability Audit
-bandit -r . --exclude "./venv,./.venv" -lll
-
-```
-
----
-
-## 📄 License
-
-This project is structured for academic research, operational evaluation, and production software architecture demonstration under the MIT License.
-
-```
-
-```
