@@ -5,7 +5,8 @@ import sys
 import joblib
 import pandas as pd
 import numpy as np
-from sklearn.svm import SVC
+from sklearn.svm import LinearSVC
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
@@ -47,13 +48,39 @@ class DatasetIngestionService:
         if not os.path.exists(filepath):
             print(f"[-] Missing Enron resource matrix at: {filepath}", file=sys.stderr)
             return pd.DataFrame(columns=['text', 'label'])
-            
+
         df = pd.read_csv(filepath)
-        df['text'] = df['Subject'].fillna('') + ' ' + df['Message'].fillna('')
-        df['label'] = df['Spam/Ham'].map({'spam': 1, 'ham': 0})
+
+        # Defensive Mapping: Handle slight column name variations dynamically
+        col_mapping = {col.lower().strip(): col for col in df.columns}
+
+        subject_col = col_mapping.get('subject', 'Subject')
+        message_col = col_mapping.get('message', 'Message')
+        label_col = col_mapping.get('spam/ham', col_mapping.get('label', 'Spam/Ham'))
+
+        if subject_col in df.columns and message_col in df.columns:
+            df['text'] = df[subject_col].fillna('') + ' ' + df[message_col].fillna('')
+        elif message_col in df.columns:
+            df['text'] = df[message_col].fillna('')
+        elif 'text' in col_mapping:
+            df['text'] = df[col_mapping['text']].fillna('')
+        else:
+            print("[-] Critical Error: Could not find a text or message column in CSV.", file=sys.stderr)
+            return pd.DataFrame(columns=['text', 'label'])
+
+        # Robust label parsing to clean whitespaces and case variances
+        if label_col in df.columns:
+            df['parsed_label'] = df[label_col].astype(str).str.lower().str.strip()
+            df['label'] = df['parsed_label'].map({'spam': 1, 'ham': 0, '1': 1, '0': 0})
+        else:
+            print("[-] Critical Error: Could not find a label column in CSV.", file=sys.stderr)
+            return pd.DataFrame(columns=['text', 'label'])
+
         df = df[['text', 'label']].dropna()
         df['label'] = df['label'].astype(int)
+
         print(f"    -> Enron Loaded: {len(df)} entries.")
+        print(f"    -> Class Balance: \n{df['label'].value_counts().to_string()}")
         return df
 
     def parse_email_file(self, filepath: str) -> str:
@@ -82,7 +109,7 @@ class DatasetIngestionService:
     def load_spamassassin(self, spam_path: str, ham_path: str) -> pd.DataFrame:
         print("[*] Ingesting SpamAssassin Data Source...")
         records = []
-        
+
         for folder, label in [(spam_path, 1), (ham_path, 0)]:
             if not os.path.exists(folder):
                 print(f"    [!] Skipping inactive dataset path boundary: {folder}")
@@ -95,7 +122,7 @@ class DatasetIngestionService:
 
         if not records:
             return pd.DataFrame(columns=['text', 'label'])
-        
+
         df = pd.DataFrame(records)
         df['label'] = df['label'].astype(int)
         print(f"    -> SpamAssassin Loaded: {len(df)} entries.")
@@ -110,16 +137,25 @@ class DatasetIngestionService:
 
         df = pd.concat([enron_df, sa_df], ignore_index=True)
         df.dropna(subset=['text', 'label'], inplace=True)
+
+        # Defensive check against duplicate strings that cause class collapse
+        print("[*] Cleaning out true exact duplicates...")
         df = df.drop_duplicates(subset=['text'], keep='first')
         df['label'] = df['label'].astype(int)
 
         # Quality Gate Verification Pass
         if df['label'].nunique() < 2:
-            raise ValueError("Data stratification error: Found fewer than two target tracking classes.")
+            raise ValueError(f"Data stratification error: Found fewer than two target tracking classes. Current distribution:\n{df['label'].value_counts()}")
 
         print("[*] Executing asynchronous text cleaning pipelines...")
         df['clean_text'] = df['text'].apply(self.preprocessor.clean)
         df = df[df['clean_text'].str.strip() != '']
+
+        # Double check after cleaning to ensure text filtering didn't drop a whole class
+        if df['label'].nunique() < 2:
+            raise ValueError("Data stratification error: Text cleaning stripped away all remaining instances of a class.")
+
+        print(f"[+] Combined Clean Dataset Distribution:\n{df['label'].value_counts().to_string()}")
         return df
 
 
@@ -128,7 +164,22 @@ class ModelTrainingPipeline:
     def __init__(self, export_dir: str = "model"):
         self.export_dir = export_dir
         self.vectorizer = TfidfVectorizer(max_features=10000, ngram_range=(1, 2))
-        self.classifier = SVC(kernel='linear', probability=True, C=1.0)
+
+        # NOTE: Swapped SVC(kernel='linear', probability=True) for LinearSVC
+        # wrapped in CalibratedClassifierCV.
+        #
+        # Why: SVC uses libsvm, which scales roughly quadratically-to-cubically
+        # with sample count. On top of that, probability=True forces an internal
+        # 5-fold CV pass just to calibrate probabilities, multiplying training
+        # time ~6x. On a combined Enron + SpamAssassin dataset (tens of
+        # thousands of rows) this is what was hanging for 15+ minutes.
+        #
+        # LinearSVC uses liblinear, which is built for exactly this case
+        # (linear kernel, high-dimensional sparse TF-IDF features) and is
+        # typically orders of magnitude faster. CalibratedClassifierCV wraps
+        # it to restore .predict_proba() so inference_app.py needs no changes.
+        base_clf = LinearSVC(C=1.0, max_iter=5000, dual='auto')
+        self.classifier = CalibratedClassifierCV(base_clf, cv=3)
 
     def execute(self, data_frame: pd.DataFrame):
         X = data_frame['clean_text']
@@ -142,13 +193,13 @@ class ModelTrainingPipeline:
             X_vec, y, test_size=0.2, random_state=42, stratify=y
         )
 
-        print(f"[*] Dispatching Linear SVC Engine [Training Size: {X_train.shape[0]} arrays]...")
+        print(f"[*] Dispatching Calibrated LinearSVC Engine [Training Size: {X_train.shape[0]} arrays]...")
         self.classifier.fit(X_train, y_train)
 
         # Validation Tracking Execution Check
         y_pred = self.classifier.predict(X_test)
         accuracy = accuracy_score(y_test, y_pred)
-        
+
         print("\n=======================================================")
         print(f"📊 SYSTEM INFRASTRUCTURE MODEL VALIDATION SUCCESSFUL")
         print(f"🎯 Global Model Accuracy Evaluation: {accuracy * 100:.2f}%")
@@ -163,12 +214,11 @@ class ModelTrainingPipeline:
         print(f"[*] Packaging weights inside memory optimized joblib buffers...")
         joblib.dump(self.classifier, model_path, compress=3)
         joblib.dump(self.vectorizer, vec_path, compress=3)
-        
+
         print(f"[+] Output written safely to disk: \n -> {model_path}\n -> {vec_path}")
 
 
 if __name__ == '__main__':
-    # Initialize components
     text_cleaner = TextPreprocessor()
     data_ingestor = DatasetIngestionService(text_cleaner)
     trainer_engine = ModelTrainingPipeline()
@@ -176,9 +226,9 @@ if __name__ == '__main__':
     try:
         # Run pipeline using structural parameters
         processed_df = data_ingestor.build_unified_dataset(
-            enron_path='enron_spam_data.csv',
-            sa_spam='dataset/spam_extracted/spam',
-            sa_ham='dataset/ham_extracted/easy_ham'
+         enron_path='dataset/combined_spam_data.csv',
+        sa_spam='dataset/spam_extracted/spam',
+        sa_ham='dataset/ham_extracted/easy_ham'
         )
         trainer_engine.execute(processed_df)
         print("\n🚀 Structural deployment updates verified! Run your FastAPI microservice.")

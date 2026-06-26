@@ -8,7 +8,7 @@
 
 SpamShield AI is an industry-grade, cloud-native asynchronous email classification engine. Moving away from monolithic script architectures, this system decouples compute-heavy Natural Language Processing (NLP) inference from user-facing CRUD management systems via high-performance microservices, explicit Pydantic contracts, and automated secure container orchestration.
 
-[cite_start]Submitted for academic evaluation at **SZABIST**[cite: 10], this iteration has been refactored to conform to enterprise software engineering principles and static application security testing (SAST) compliance.
+Submitted for academic evaluation at **SZABIST**, this iteration has been refactored to conform to enterprise software engineering principles and static application security testing (SAST) compliance.
 
 ---
 
@@ -41,13 +41,14 @@ The application is structured into three decoupled layers operating within an is
 
 ## 📁 Dataset & Corpus Metrics
 
-The pipeline aggregates data from multiple public corpuses to build a stratified, balanced representation of text-based threat signatures:
+The data pipeline has been upgraded with a massive unified data variant ensuring clean token variance and preventing class collapse during deduplication passes:
 
-| Source | Rows | Target Classification |
+| Source Metrics | Records | Target Classification |
 | :--- | :--- | :--- |
-| Enron (AUEB / Kaggle Archive) | 33,716 | `spam` / `ham` |
-| SpamAssassin Corpus | 501 | `spam` |
-| **Total Aggregated Corpus Record Set** | **34,217** | **Dual Class Stratification** |
+| **Total Ingested Matrix Records** | **83,448** | Pre-cleaning raw shape alignment |
+| **Deduplicated & Cleaned Ham Rows** | **39,527** | Legitimate email samples (`label: 0`) |
+| **Deduplicated & Cleaned Spam Rows** | **43,872** | Malicious threat signature samples (`label: 1`) |
+| **Final Unified Corpus Framework** | **83,399** | **Highly-Optimized Dual Class Stratification** |
 
 ---
 
@@ -58,18 +59,9 @@ Ensure your host machine has the following dependencies initialized:
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - Python 3.11+ (Only required for standalone local script execution or model retraining)
 
-### 1. Bootstrapping the Orchestrated Stack (Docker Compose)
-To compile, link networks, run health check triggers, and bring up the entire multi-service ecosystem live in one command, run:
+### 1. Model Retraining (Local Step)
+Because training datasets are excluded from version control to maintain a clean git footprint, ensure your unified dataset file is named exactly `enron_spam_data.csv` and dropped into the `dataset/` directory.
 
+To run the pipeline and serialize fresh weights to disk:
 ```bash
-docker compose up --build
-Once initialization logs stabilize, navigate your web browser to the following access control points:
-
-Web Application Panel: http://localhost:5000
-
-Interactive OpenAPI/Swagger API Engine Documentation: http://localhost:8000/docs
-
-To pull down active container clusters and release virtual host networks cleanly, execute:
-
-Bash
-docker compose down
+python train_model.py

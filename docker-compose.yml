@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # 🗄️ Database Service Layer
   db:
@@ -17,7 +15,7 @@ services:
   inference_api:
     build:
       context: .
-      dockerfile: model.Dockerfile
+      dockerfile: model.DockerFile
     container_name: spamshield_inference
     restart: always
     environment:
@@ -26,6 +24,8 @@ services:
       - MODEL_VERSION=v1.0.0
     ports:
       - "8000:8000"
+    volumes:
+      - ./model:/app/model:ro
     networks:
       - spamshield_network
     # Don't start routing predictions until internal health verifies

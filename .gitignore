@@ -1,9 +1,37 @@
+# Virtual environments
 .venv/
+venv/
+env/
+
+# Python artifacts
 __pycache__/
-*.pkl
 *.pyc
+*.pyo
+*.pkl
+
+# Datasets (regenerable / too large for git)
 dataset/
+
+# Compressed archives (e.g. raw downloaded datasets)
 *.bz2
 *.zip
+*.gz
+*.tar
+
+# Environment & secrets
 .env
+.env.*
+
+# Flask
 instance/
+
+# IDE
+.vscode/
+.idea/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
