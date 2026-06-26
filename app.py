@@ -1,12 +1,13 @@
 import os
 import re
+from collections import defaultdict
+from datetime import datetime
+
 import bleach
 import requests
-from flask import Flask, render_template, request, redirect, url_for, flash
-from pymongo import MongoClient
 from bson.objectid import ObjectId
-from datetime import datetime
-from collections import defaultdict
+from flask import Flask, flash, redirect, render_template, request, url_for
+from pymongo import MongoClient
 
 app = Flask(__name__)
 
@@ -36,9 +37,7 @@ except Exception as e:
 # 🛡️ Data Sanitization Layer
 # ─────────────────────────────────────────────
 def sanitize_email_input(text: str) -> str:
-    """
-    Sanitizes raw strings to eliminate XSS injections and cleans structural white-spaces.
-    """
+    """Sanitizes raw strings to eliminate XSS injections and cleans structural white-spaces."""
     if not text:
         return ""
     # Strip HTML tags/scripts cleanly using bleach
@@ -222,5 +221,8 @@ def stats():
 
 
 if __name__ == "__main__":
+    # Safely evaluate variable toggle to insulate runtime deployments against CWE-94
+    debug_mode = os.getenv("FLASK_DEBUG", "False").lower() in ("true", "1")
+
     # Threaded defaults for resilient routing debugging
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host="127.0.0.1", port=5000, debug=debug_mode)
