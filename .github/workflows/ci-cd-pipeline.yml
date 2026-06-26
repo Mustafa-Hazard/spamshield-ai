@@ -1,0 +1,54 @@
+name: SpamShield AI - CI Pipeline & Security Gates
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  quality-and-security:
+    name: Code Quality & Security Auditing
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Check out the repository source code code
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    # 2. Set up an isolated Python runtime environment
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-node: '3.11'
+        cache: 'pip' # Automated caching for faster workflow runs
+
+    # 3. Upgrade package installer and fetch verification tools
+    - name: Install Linting & Security Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install black flake8 bandit
+
+    # 4. Strict formatting validation (Enforces clean coding habits)
+    - name: Verify Code Style (Black Formatter)
+      run: |
+        # Checks if code matches standard format rules without overwriting files
+        black --check app.py model/inference_app.py train_model.py build_data_file.py
+
+    # 5. Syntax and anti-pattern analysis via Flake8
+    - name: Lint Code Architecture (Flake8)
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. 
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    # 6. Static Application Security Testing (SAST)
+    - name: Execute Security Vulnerability Audit (Bandit)
+      run: |
+        # Run security check on our application source folders
+        # -r: recursive scan, -lll: report only Medium/High severity bugs
+        bandit -r app.py model/inference_app.py train_model.py -lll
