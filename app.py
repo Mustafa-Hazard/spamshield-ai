@@ -1,58 +1,52 @@
 import os
-import pickle
 import re
-import nltk
+import bleach
+import requests
 from flask import Flask, render_template, request, redirect, url_for, flash
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from datetime import datetime
-from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer
-
-nltk.download('stopwords', quiet=True)
+from collections import defaultdict
 
 app = Flask(__name__)
-app.secret_key = 'spamclassifier_secret_key'
 
 # ─────────────────────────────────────────────
-# MongoDB Connection
+# ⚙️ Configuration & Environment Isolation
 # ─────────────────────────────────────────────
-client = MongoClient('mongodb://localhost:27017/')
-db = client['spam_classifier_db']
-predictions_col = db['predictions']
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "prod-fallback-security-string-321")
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+INFERENCE_SERVICE_URL = os.getenv("INFERENCE_SERVICE_URL", "http://localhost:8000/api/v1/predict")
 
 # ─────────────────────────────────────────────
-# Load Model & Vectorizer
+# 🗄️ MongoDB Connection Setup
 # ─────────────────────────────────────────────
-with open('model/spam_model.pkl', 'rb') as f:
-    model = pickle.load(f)
-with open('model/tfidf_vectorizer.pkl', 'rb') as f:
-    tfidf = pickle.load(f)
+try:
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    db = client['spam_classifier_db']
+    predictions_col = db['predictions']
+    # Trigger an early connection check
+    client.server_info()
+except Exception as e:
+    print(f"[-] Database connection configuration error: {e}")
 
 # ─────────────────────────────────────────────
-# Text Cleaning (same as train_model.py)
+# 🛡️ Data Sanitization Layer
 # ─────────────────────────────────────────────
-stemmer = PorterStemmer()
-stop_words = set(stopwords.words('english'))
-
-def clean_text(text):
-    if not isinstance(text, str):
+def sanitize_email_input(text: str) -> str:
+    """
+    Sanitizes raw strings to eliminate XSS injections and cleans structural white-spaces.
+    """
+    if not text:
         return ""
-    text = text.lower()
-    text = re.sub(r'http\S+|www\S+', '', text)
-    text = re.sub(r'\S+@\S+', '', text)
-    text = re.sub(r'[^a-zA-Z\s]', '', text)
-    text = re.sub(r'\s+', ' ', text).strip()
-    tokens = text.split()
-    tokens = [stemmer.stem(w) for w in tokens if w not in stop_words and len(w) > 2]
-    return ' '.join(tokens)
-
+    # Strip HTML tags/scripts cleanly using bleach
+    clean_text = bleach.clean(text, tags=[], attributes={}, strip=True)
+    # Remove lingering structural excess layout tabs/spaces
+    return re.sub(r'\s+', ' ', clean_text).strip()
 
 # ─────────────────────────────────────────────
-# ROUTES
+# 🛣️ Application Routing Handlers
 # ─────────────────────────────────────────────
 
-# HOME — Predict
 @app.route('/', methods=['GET', 'POST'])
 def index():
     result = None
@@ -60,98 +54,116 @@ def index():
     confidence = None
 
     if request.method == 'POST':
-        email_text = request.form.get('email_text', '').strip()
-        if email_text:
-            cleaned = clean_text(email_text)
-            vectorized = tfidf.transform([cleaned])
-            prediction = model.predict(vectorized)[0]
-            proba = model.predict_proba(vectorized)[0]
-            confidence = round(max(proba) * 100, 2)
-            result = 'SPAM' if prediction == 1 else 'HAM'
+        raw_text = request.form.get('email_text', '')
+        email_text = sanitize_email_input(raw_text)
 
-            # Save to MongoDB
-            predictions_col.insert_one({
-                'email_text': email_text,
-                'result': result,
-                'confidence': confidence,
-                'timestamp': datetime.now()
-            })
+        if email_text:
+            # Delegate model execution out to isolated FastAPI microservice
+            payload = {"content": email_text}
+            try:
+                response = requests.post(INFERENCE_SERVICE_URL, json=payload, timeout=4.0)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    result = data.get("label", "UNKNOWN").upper()
+                    # Convert to matching percentage format for the UI layout
+                    confidence = round(data.get("confidence_score", 0.0) * 100, 2)
+
+                    # Persist record tracking audit trial entry 
+                    predictions_col.insert_one({
+                        'email_text': email_text,
+                        'result': result,
+                        'confidence': confidence,
+                        'timestamp': datetime.utcnow() # Use UTC for cleaner cloud cross-region sorting
+                    })
+                else:
+                    flash("Inference cluster returned an error. Please check downstream log metrics.", "danger")
+            
+            except requests.exceptions.RequestException:
+                # Fault tolerant fallback to protect service degradation
+                flash("Inference microservice is currently unreachable. System is processing with degraded capability.", "warning")
+                result = "SERVICE UNHEALTHY"
 
     return render_template('index.html', result=result, email_text=email_text, confidence=confidence)
 
 
-# READ — View all records
 @app.route('/records')
 def records():
     all_records = list(predictions_col.find().sort('timestamp', -1))
     return render_template('records.html', records=all_records)
 
 
-# CREATE — Add record manually
 @app.route('/add', methods=['GET', 'POST'])
 def add():
     if request.method == 'POST':
-        email_text = request.form.get('email_text', '').strip()
+        email_text = sanitize_email_input(request.form.get('email_text', ''))
         result = request.form.get('result', '').strip().upper()
+        
         if email_text and result in ['SPAM', 'HAM']:
             predictions_col.insert_one({
                 'email_text': email_text,
                 'result': result,
-                'confidence': 'Manual',
-                'timestamp': datetime.now()
+                'confidence': 'Manual Override',
+                'timestamp': datetime.utcnow()
             })
-            flash('Record added successfully!', 'success')
+            flash('Record written safely to ledger!', 'success')
             return redirect(url_for('records'))
         else:
-            flash('Please fill all fields correctly.', 'danger')
+            flash('Validation validation failed. Review submitted parameters.', 'danger')
+            
     return render_template('add.html')
 
 
-# UPDATE — Edit record
 @app.route('/edit/<record_id>', methods=['GET', 'POST'])
 def edit(record_id):
-    record = predictions_col.find_one({'_id': ObjectId(record_id)})
+    try:
+        record = predictions_col.find_one({'_id': ObjectId(record_id)})
+    except Exception:
+        flash('Invalid record parameter formatting.', 'danger')
+        return redirect(url_for('records'))
+
     if not record:
-        flash('Record not found.', 'danger')
+        flash('Target database record could not be mapped.', 'danger')
         return redirect(url_for('records'))
 
     if request.method == 'POST':
-        email_text = request.form.get('email_text', '').strip()
+        email_text = sanitize_email_input(request.form.get('email_text', ''))
         result = request.form.get('result', '').strip().upper()
+        
         if email_text and result in ['SPAM', 'HAM']:
             predictions_col.update_one(
                 {'_id': ObjectId(record_id)},
                 {'$set': {'email_text': email_text, 'result': result}}
             )
-            flash('Record updated successfully!', 'success')
+            flash('Record ledger modified successfully.', 'success')
             return redirect(url_for('records'))
         else:
-            flash('Please fill all fields correctly.', 'danger')
+            flash('Invalid modification data provided.', 'danger')
 
     return render_template('edit.html', record=record)
 
 
-# DELETE — Remove record
 @app.route('/delete/<record_id>')
 def delete(record_id):
-    predictions_col.delete_one({'_id': ObjectId(record_id)})
-    flash('Record deleted successfully!', 'warning')
+    try:
+        predictions_col.delete_one({'_id': ObjectId(record_id)})
+        flash('Record cleanly scrubbed from storage history.', 'warning')
+    except Exception:
+        flash('Failed to drop object item reference context.', 'danger')
     return redirect(url_for('records'))
 
 
-# STATS — Dashboard
 @app.route('/stats')
 def stats():
-    total      = predictions_col.count_documents({})
+    total = predictions_col.count_documents({})
     spam_count = predictions_col.count_documents({'result': 'SPAM'})
-    ham_count  = predictions_col.count_documents({'result': 'HAM'})
+    ham_count = predictions_col.count_documents({'result': 'HAM'})
 
-    # Build line chart data — group by date
     pipeline = [
         {
             '$group': {
                 '_id': {
-                    'date':   {'$dateToString': {'format': '%Y-%m-%d', 'date': '$timestamp'}},
+                    'date': {'$dateToString': {'format': '%Y-%m-%d', 'date': '$timestamp'}},
                     'result': '$result'
                 },
                 'count': {'$sum': 1}
@@ -161,29 +173,31 @@ def stats():
     ]
     raw = list(predictions_col.aggregate(pipeline))
 
-    # Organize into {date: {spam:x, ham:y}}
-    from collections import defaultdict
     daily = defaultdict(lambda: {'spam': 0, 'ham': 0})
     for r in raw:
-        date   = r['_id']['date']
-        result = r['_id']['result']
+        # Gracefully handle instances where historical records have unpopulated tracking fields
+        date = r['_id'].get('date') or datetime.utcnow().strftime('%Y-%m-%d')
+        result = r['_id'].get('result', 'HAM')
+        
         if result == 'SPAM':
             daily[date]['spam'] += r['count']
         else:
-            daily[date]['ham']  += r['count']
+            daily[date]['ham'] += r['count']
 
     chart_data = [
         {'date': d, 'spam': v['spam'], 'ham': v['ham']}
         for d, v in sorted(daily.items())
     ]
 
-    return render_template('stats.html',
+    return render_template(
+        'stats.html',
         total=total,
         spam_count=spam_count,
         ham_count=ham_count,
         chart_data=chart_data
     )
-    
-    
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Threaded defaults for resilient routing debugging
+    app.run(host="127.0.0.1", port=5000, debug=True)

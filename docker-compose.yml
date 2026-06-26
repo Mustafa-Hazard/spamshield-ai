@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # 🗄️ Database Service Layer
+  db:
+    image: mongo:6.0
+    container_name: spamshield_db
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - spamshield_network
+
+  # 🧠 Isolated ML Inference API Microservice
+  inference_api:
+    build:
+      context: .
+      dockerfile: model.Dockerfile
+    container_name: spamshield_inference
+    restart: always
+    environment:
+      - MODEL_PATH=/app/model/spam_classifier.pkl
+      - VECTORIZER_PATH=/app/model/vectorizer.pkl
+      - MODEL_VERSION=v1.0.0
+    ports:
+      - "8000:8000"
+    networks:
+      - spamshield_network
+    # Don't start routing predictions until internal health verifies
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # 🎨 User Interface Layer
+  web_ui:
+    build:
+      context: .
+      dockerfile: web.Dockerfile
+    container_name: spamshield_web
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://db:27017/
+      - INFERENCE_SERVICE_URL=http://inference_api:8000/api/v1/predict
+      - FLASK_SECRET_KEY=super-secure-portfolio-key-change-in-prod
+    networks:
+      - spamshield_network
+    depends_on:
+      db:
+        condition: service_started
+      inference_api:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
+
+networks:
+  spamshield_network:
+    driver: bridge

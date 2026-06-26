@@ -1,6 +1,13 @@
 flask
+fastapi
+uvicorn
+gunicorn
+pydantic
+requests
+bleach
 pymongo
 scikit-learn
 pandas
 numpy
+joblib
 nltk
