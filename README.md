@@ -1,67 +1,143 @@
-# SpamShield AI — Enterprise Anti-Spam Engine & Production ML Pipeline
+```markdown
+# SpamShield AI
 
-[![CI Pipeline & Security Gates](https://github.com/Mustafa-Hazard/spamshield-ai/actions/workflows/ci-cd-pipeline.yml/badge.svg)](https://github.com/Mustafa-Hazard/spamshield-ai/actions)
-![Python](https://img.shields.io/badge/python-3.11-blue.svg)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.100.0%2B-009688.svg)
-![Flask](https://img.shields.io/badge/Flask-3.0%2B-000000.svg)
-![Docker](https://img.shields.io/badge/Docker-Orchestrated-2496ED.svg)
+[![SpamShield AI - CI Pipeline & Security Gates](https://github.com/Mustafa-Hazard/spamshield-ai/actions/workflows/ci-cd-pipeline.yml/badge.svg)](https://github.com/Mustafa-Hazard/spamshield-ai/actions)
+![Python Version](https://img.shields.io/badge/python-3.11-blue.svg)
+![Database](https://img.shields.io/badge/database-MongoDB-green.svg)
+![Framework](https://img.shields.io/badge/framework-Flask-black.svg)
+![Security Passed](https://img.shields.io/badge/security-Bandit%20Passed-brightgreen.svg)
 
-SpamShield AI is an industry-grade, cloud-native asynchronous email classification engine. Moving away from monolithic script architectures, this system decouples compute-heavy Natural Language Processing (NLP) inference from user-facing CRUD management systems via high-performance microservices, explicit Pydantic contracts, and automated secure container orchestration.
-
-Submitted for academic evaluation at **SZABIST**, this iteration has been refactored to conform to enterprise software engineering principles and static application security testing (SAST) compliance.
-
----
-
-## 🏗️ System Architecture
-
-The application is structured into three decoupled layers operating within an isolated virtual network bridge:
-
-1. **User Interface Web Node (Flask)**: A lean front-end gateway that processes client input, sanitizes data against malicious text vectors, writes transactional history to NoSQL document layers, and safely tracks service-level degradation metrics.
-2. **Inference Microservice Engine (FastAPI)**: A high-throughput API layer running on a pre-compiled worker model pool. It dynamically ingests textual arrays, vectorizes sparse metrics, and yields lightning-fast structural predictions with floating confidence ratios.
-3. **Persistent Core (MongoDB 6.0)**: A self-contained database cluster running independent data indexing streams to back transactional real-time dashboards and linear aggregations over time.
+SpamShield AI is an enterprise-grade web application and machine learning orchestration layer designed to scan, isolate, classify, and audit malicious email payloads and spam signatures. Built using a decoupled microservice mindset, the platform isolates consumer-facing routing logic from resource-heavy model inference execution to maximize systemic availability, fault tolerance, and horizontal scalability.
 
 ---
 
-## 🛠️ Tech Stack & Dependencies
+## 🏗️ Architecture & Technical Ecosystem
 
-### Core Engineering & Application Layer
-- **Frontend / Client Management**: Flask, Gunicorn (WSGI HTTP Production Server), Requests, Bleach (HTML Sanitization Engine)
-- **Machine Learning Inference Service**: FastAPI, Uvicorn (ASGI Server), Pydantic v2 (Data Contract Verification)
-- **Data Analytics & ML Core**: Scikit-Learn (Linear Support Vector Classifier), Pandas, NumPy, Joblib (High-density matrix compression), NLTK (PorterStemmer tokenization pipeline)
+The platform separates presentation and administration layers from core machine learning computation through a resilient web architecture:
 
-### DevOps, Infrastructure & Security
-- **Database Engine**: MongoDB 6.0 (NoSQL Document Store)
-- **Containerization**: Docker & Multi-Stage Production Optimization Engine
-- **Orchestration Layer**: Docker Compose Virtual Bridged Networks
-- **CI/CD Quality Gates**: GitHub Actions
-- **Static Application Security Testing (SAST)**: Bandit Security Audit Scanner
-- **Code Standards & Linters**: Black Formatter, Flake8 Linter
+* **Presentation & Ledger Layer (Flask):** Serves administrative control panels, historical transaction audit rooms, interactive data statistics, and data modification operations (`/records`, `/add`, `/edit`, `/delete`, `/stats`).
+* **Decoupled Inference Layer (FastAPI):** An isolated, high-performance microservice that accepts text content payloads and runs natural language processing or classification models independently, insulating the user experience from processing degradation.
+* **Data Hygiene & Ingress Sanitization (Bleach & Regex):** Intercepts raw inputs at the application boundary. It cleans structural layout whitespace irregularities and thoroughly strips raw markup scripts to neutralize potential Cross-Site Scripting (XSS) injection blocks.
+* **Persistent Analytics Cluster (MongoDB):** Maintains immutable logging metadata fields including sanitized content streams, classification targets (`SPAM`/`HAM`), model confidence indices, and high-resolution UTC sorting parameters.
 
 ---
 
-## 📁 Dataset & Corpus Metrics
+## 🛡️ DevOps Integration & Continuous Security Gates
 
-The data pipeline has been upgraded with a massive unified data variant ensuring clean token variance and preventing class collapse during deduplication passes:
+SpamShield AI implements a strict Continuous Integration (CI) automated quality pipeline powered by GitHub Actions (`.github/workflows/ci-cd-pipeline.yml`) that guarantees only safe, compliant code enters production environments.
 
-| Source Metrics | Records | Target Classification |
+### Pipeline Lifecycle Actions
+1.  **Isolated Execution Sandbox:** Configures clean virtual runtime parameters via automated containers running Python 3.11 with `pip` package caching optimization enabled.
+2.  **Dynamic Formatting Enforcement (Black):** Validates and preserves layout compliance across the entire repository dynamically using `black --check .` while safely ignoring localized environment dependencies (`venv`).
+3.  **Syntactic Integrity Auditing (Flake8):** Parses files against architectural anti-patterns, missing variable mapping errors, and syntax defects.
+4.  **Static Application Security Testing (Bandit - SAST):** Scans source directories recursively for vulnerability entry vectors. It successfully protects infrastructure integrity by restricting insecure hardcoded behaviors (e.g., preventing **CWE-94 Code Generation Control** threats by enforcing dynamic environment variable flag evaluations).
+
+---
+
+## ⚙️ Configuration & Environment Settings
+
+The application handles multi-environment scaling (Local vs. Dockerized vs. Cloud Production) seamlessly via variable configuration flags.
+
+| Environment Variable | Default Local Fallback Value | Purpose / Scope |
 | :--- | :--- | :--- |
-| **Total Ingested Matrix Records** | **83,448** | Pre-cleaning raw shape alignment |
-| **Deduplicated & Cleaned Ham Rows** | **39,527** | Legitimate email samples (`label: 0`) |
-| **Deduplicated & Cleaned Spam Rows** | **43,872** | Malicious threat signature samples (`label: 1`) |
-| **Final Unified Corpus Framework** | **83,399** | **Highly-Optimized Dual Class Stratification** |
+| `FLASK_SECRET_KEY` | `prod-fallback-security-string-321` | Encrypts secure cookie states and flash session notifications. |
+| `MONGO_URI` | `mongodb://localhost:27017/` | Network target string for the data persistence storage layer. |
+| `INFERENCE_SERVICE_URL` | `http://localhost:8000/api/v1/predict` | Endpoint routing location for the standalone FastAPI ML service. |
+| `FLASK_DEBUG` | `False` | Toggles debugger environments. Default is safe (`False`) to mitigate CWE-94 threats. |
 
 ---
 
-## 🚀 Installation & Local Execution
+## 🚀 Local Deployment Guide
 
 ### Prerequisites
-Ensure your host machine has the following dependencies initialized:
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- Python 3.11+ (Only required for standalone local script execution or model retraining)
+* Python 3.11+
+* MongoDB Instance (Running locally or hosted via Atlas)
 
-### 1. Model Retraining (Local Step)
-Because training datasets are excluded from version control to maintain a clean git footprint, ensure your unified dataset file is named exactly `enron_spam_data.csv` and dropped into the `dataset/` directory.
-
-To run the pipeline and serialize fresh weights to disk:
+### Step 1: Clone and Enter Directory
 ```bash
-python train_model.py
+git clone [https://github.com/Mustafa-Hazard/spamshield-ai.git](https://github.com/Mustafa-Hazard/spamshield-ai.git)
+cd spamshield-ai
+
+```
+
+### Step 2: Establish Virtual Environment
+
+```powershell
+# Create environment
+python -m venv venv
+
+# Activate on Windows (PowerShell)
+.\venv\Scripts\Activate.ps1
+
+# Activate on macOS/Linux
+source venv/bin/activate
+
+```
+
+### Step 3: Fetch Dependencies
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+
+```
+
+### Step 4: Run Application in Development Mode
+
+To active live reloading and verbose debugging flags locally, supply runtime environment parameters directly to your shell process:
+
+```powershell
+# Windows PowerShell
+$env:FLASK_DEBUG="True"
+python app.py
+
+# macOS / Linux Bash
+export FLASK_DEBUG="True"
+python app.py
+
+```
+
+The localized gateway will initialize smoothly at `http://127.0.0.1:5000/`.
+
+---
+
+## 🐳 Docker Container Orchestration
+
+To compile the service suite inside an isolated microservice pod layout, deploy via `docker-compose`:
+
+```bash
+# Build environment clusters and spin up containers
+docker-compose up --build
+
+# Run containers detached in background
+docker-compose up -d
+
+```
+
+---
+
+## 🧪 Quality and Contribution Guidelines
+
+Before executing changes back to remote feature branches, run localized validation gates to maintain passing pipeline badges:
+
+```bash
+# Code Style formatting optimization
+python -m black . --exclude "venv/|.venv/"
+
+# Architecture & Style Verification
+flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+# SAST Vulnerability Audit
+bandit -r . --exclude "./venv,./.venv" -lll
+
+```
+
+---
+
+## 📄 License
+
+This project is structured for academic research, operational evaluation, and production software architecture demonstration under the MIT License.
+
+```
+
+```
