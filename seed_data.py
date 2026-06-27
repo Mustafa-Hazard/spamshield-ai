@@ -30,6 +30,7 @@ mock_ham_emails = [
     "Your weekly automated analytics report for the project pipeline is now available for download.",
 ]
 
+
 def seed_database():
     print("[*] Flushing old mock records from the 'predictions' collection...")
     # Optional: Uncomment the line below if you want a totally fresh chart every time you run it
@@ -39,38 +40,45 @@ def seed_database():
     base_time = datetime.utcnow()
 
     print("[*] Fabricating 7 days of historical email tracking logs...")
-    
+
     # Generate data spread across the last 7 days
     for day_offset in range(7, -1, -1):
         target_date = base_time - timedelta(days=day_offset)
-        
+
         # Randomize the number of spam and ham emails sent on this particular day
         spam_count = random.randint(10, 25)
         ham_count = random.randint(15, 35)
 
         # Inject Spam records
         for _ in range(spam_count):
-            dummy_records.append({
-                "email_text": random.choice(mock_spam_emails),
-                "result": "SPAM",
-                "confidence": round(random.uniform(85.0, 99.9), 2),
-                "timestamp": target_date - timedelta(hours=random.randint(0, 23))
-            })
+            dummy_records.append(
+                {
+                    "email_text": random.choice(mock_spam_emails),
+                    "result": "SPAM",
+                    "confidence": round(random.uniform(85.0, 99.9), 2),
+                    "timestamp": target_date - timedelta(hours=random.randint(0, 23)),
+                }
+            )
 
         # Inject Ham records
         for _ in range(ham_count):
-            dummy_records.append({
-                "email_text": random.choice(mock_ham_emails),
-                "result": "HAM",
-                "confidence": round(random.uniform(90.0, 99.5), 2),
-                "timestamp": target_date - timedelta(hours=random.randint(0, 23))
-            })
+            dummy_records.append(
+                {
+                    "email_text": random.choice(mock_ham_emails),
+                    "result": "HAM",
+                    "confidence": round(random.uniform(90.0, 99.5), 2),
+                    "timestamp": target_date - timedelta(hours=random.randint(0, 23)),
+                }
+            )
 
     if dummy_records:
         result = predictions_col.insert_many(dummy_records)
-        print(f"[+] Success! Inserted {len(result.inserted_ids)} records into the database ledger.")
+        print(
+            f"[+] Success! Inserted {len(result.inserted_ids)} records into the database ledger."
+        )
     else:
         print("[-] No records were compiled.")
+
 
 if __name__ == "__main__":
     seed_database()
